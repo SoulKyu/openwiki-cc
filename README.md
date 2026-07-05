@@ -7,7 +7,7 @@ OpenWiki ships as a standalone CLI on its own harness (DeepAgents/LangGraph, a l
 backend, a SQLite checkpointer, provider adapters, an Ink TUI). Claude Code already provides all
 of that plumbing. This repo extracts **the agent itself** — the documentation system prompt, the
 git-evidence collection, the wiki structure, and the idempotence logic — and re-expresses it as a
-single native slash command: `.claude/commands/openwiki.md`.
+single native slash command, `commands/openwiki.md`, packaged as an installable Claude Code plugin.
 
 The system prompt and the exact git commands are reproduced **verbatim from OpenWiki's real
 source**, not from memory.
@@ -21,16 +21,29 @@ history — and on later runs it updates only what actually changed.
 
 ## Install
 
-Copy the command into the repo you want to document (project-level), or into `~/.claude/commands/`
-to make it available everywhere:
+### Via the plugin marketplace (recommended)
+
+Inside Claude Code:
+
+```
+/plugin marketplace add SoulKyu/openwiki-cc
+/plugin install openwiki@openwiki-cc
+```
+
+Then `/openwiki` is available in every project. `/plugin marketplace update openwiki-cc` pulls
+new versions.
+
+### Manual (no marketplace)
+
+Copy the single command file into the repo you want to document, or globally:
 
 ```bash
 # per-project
 mkdir -p your-repo/.claude/commands
-cp .claude/commands/openwiki.md your-repo/.claude/commands/
+cp commands/openwiki.md your-repo/.claude/commands/
 
 # or global
-cp .claude/commands/openwiki.md ~/.claude/commands/
+cp commands/openwiki.md ~/.claude/commands/
 ```
 
 ## Usage
@@ -102,7 +115,7 @@ comparable documentation quality.
 To run non-interactively without permission prompts, grant a minimal allowlist in
 `.claude/settings.json` (read-only git + snapshot tooling, writes scoped to `openwiki/`,
 `CLAUDE.md`, `AGENTS.md`). The full snippet is documented inside
-[`.claude/commands/openwiki.md`](.claude/commands/openwiki.md).
+[`commands/openwiki.md`](commands/openwiki.md).
 
 ## Fidelity to upstream
 
@@ -117,6 +130,20 @@ recommendation.
 
 **Dropped as acceptable loss:** provider adapters, credential storage, the Ink TUI, OpenRouter
 fallback, and LangSmith tracing (Claude Code transcripts cover debugging).
+
+## Repository layout
+
+```
+.claude-plugin/
+  plugin.json        # plugin manifest
+  marketplace.json   # single-plugin marketplace (source: ./)
+commands/
+  openwiki.md        # the slash command (system prompt + git + idempotence)
+README.md
+```
+
+The repo is both the plugin and its marketplace, so `/plugin marketplace add SoulKyu/openwiki-cc`
+exposes it directly.
 
 ## License
 
