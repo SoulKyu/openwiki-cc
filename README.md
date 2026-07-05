@@ -1,13 +1,17 @@
 # openwiki-cc
 
-A native **Claude Code** port of [OpenWiki](https://github.com/langchain-ai/openwiki) — an agent
-that generates and maintains a documentation wiki (`openwiki/`) for any repository.
+A native **Claude Code** and **OpenAI Codex** port of
+[OpenWiki](https://github.com/langchain-ai/openwiki) — an agent that generates and maintains a
+documentation wiki (`openwiki/`) for any repository.
 
 OpenWiki ships as a standalone CLI on its own harness (DeepAgents/LangGraph, a local shell
-backend, a SQLite checkpointer, provider adapters, an Ink TUI). Claude Code already provides all
-of that plumbing. This repo extracts **the agent itself** — the documentation system prompt, the
-git-evidence collection, the wiki structure, and the idempotence logic — and re-expresses it as a
-single native slash command, `commands/wiki.md`, packaged as an installable Claude Code plugin.
+backend, a SQLite checkpointer, provider adapters, an Ink TUI). Coding agents like Claude Code
+and Codex already provide all of that plumbing. This repo extracts **the agent itself** — the
+documentation system prompt, the git-evidence collection, the wiki structure, and the idempotence
+logic — and re-expresses it natively for each host:
+
+- **Claude Code** — a slash-command plugin: `commands/wiki.md` → `/openwiki:wiki`.
+- **Codex** — a skill: `.agents/skills/openwiki/SKILL.md` → `$openwiki`.
 
 The system prompt and the exact git commands are reproduced **verbatim from OpenWiki's real
 source**, not from memory.
@@ -19,7 +23,7 @@ Point it at a repository and it writes human- and agent-friendly Markdown docume
 workflows, operations, …). It grounds every claim in source files, existing docs, and git
 history — and on later runs it updates only what actually changed.
 
-## Install
+## Install — Claude Code
 
 ### Via the plugin marketplace (recommended)
 
@@ -50,12 +54,33 @@ cp commands/wiki.md your-repo/.claude/commands/
 cp commands/wiki.md ~/.claude/commands/
 ```
 
+## Install — Codex
+
+Codex loads skills from `.agents/skills/`. Copy the skill folder globally (available in every
+repo) or into a specific repo, then restart Codex:
+
+```bash
+# global → available everywhere
+mkdir -p ~/.agents/skills
+cp -r .agents/skills/openwiki ~/.agents/skills/
+
+# or per-repo
+mkdir -p your-repo/.agents/skills
+cp -r .agents/skills/openwiki your-repo/.agents/skills/
+```
+
+Invoke it explicitly with `$openwiki` (or via the `/skills` menu); Codex may also trigger it
+implicitly when you ask to "initialize / update the openwiki docs". It auto-detects init vs
+update from whether `openwiki/` already exists.
+
+> Codex skills don't take slash arguments, so the mode comes from your phrasing (or the
+> `openwiki/` auto-detect) rather than an `init`/`update` token. Codex custom prompts
+> (`~/.codex/prompts/`) are deprecated, so this ships as a skill.
+
 ## Usage
 
-Inside Claude Code, from the root of the target repository:
-
-Installed as a plugin the command is `/openwiki:wiki`; copied under `.claude/commands/` it is
-`/wiki`. Both take the same arguments:
+**Claude Code** — from the root of the target repository. Installed as a plugin the command is
+`/openwiki:wiki`; copied under `.claude/commands/` it is `/wiki`. Both take the same arguments:
 
 | Command | Behavior |
 |---|---|
@@ -67,6 +92,10 @@ Installed as a plugin the command is `/openwiki:wiki`; copied under `.claude/com
 > **Note** — auto-route replaces upstream OpenWiki's interactive-chat default (a slash command
 > can't be a bare `/openwiki` anyway; plugin commands are always namespaced). `init` and `update`
 > remain explicit.
+
+**Codex** — invoke `$openwiki` (or ask to "update the openwiki docs"). It auto-detects init
+(no `openwiki/`) vs update (`openwiki/` exists); say "initialize" or "update" to force a mode,
+and add any extra instruction in the same request.
 
 ## How it works
 
@@ -142,15 +171,24 @@ fallback, and LangSmith tracing (Claude Code transcripts cover debugging).
 
 ```
 .claude-plugin/
-  plugin.json        # plugin manifest
+  plugin.json        # Claude Code plugin manifest
   marketplace.json   # single-plugin marketplace (source: ./)
 commands/
-  wiki.md            # the slash command (system prompt + git + idempotence)
+  wiki.md            # Claude Code slash command (system prompt + git + idempotence)
+.agents/skills/
+  openwiki/SKILL.md  # Codex skill (same agent, adapted to Codex tools + context model)
 README.md
 ```
 
-The repo is both the plugin and its marketplace, so `/plugin marketplace add SoulKyu/openwiki-cc`
-exposes it directly.
+The repo is both the Claude Code plugin and its marketplace, so
+`/plugin marketplace add SoulKyu/openwiki-cc` exposes it directly. The Codex skill under
+`.agents/skills/` is copied into `~/.agents/skills/` or a repo's `.agents/skills/`.
+
+Both hosts carry the **same** verbatim OpenWiki system prompt, git commands, `.last-update.json`
+shape and idempotence logic. They differ only where the hosts differ: Claude Code uses native
+file tools + parallel read-only subagents for exploration; Codex uses its shell + `apply_patch`
+and relies on its own native context compaction (no subagent tool), so its skill drops the
+subagent section and generalizes the tool vocabulary.
 
 ## License
 
