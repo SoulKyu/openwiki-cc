@@ -4,7 +4,9 @@ argument-hint: "[init|update] [extra instruction]"
 allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task
 ---
 
-# /openwiki — documentation wiki agent
+# /openwiki:wiki — documentation wiki agent
+
+Invoked as `/openwiki:wiki` (auto-route), `/openwiki:wiki init`, or `/openwiki:wiki update`.
 
 Native Claude Code port of OpenWiki (`langchain-ai/openwiki`). You are the agent; this
 repository is the target. Follow the routing, run the git evidence collection, then act on

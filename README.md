@@ -7,7 +7,7 @@ OpenWiki ships as a standalone CLI on its own harness (DeepAgents/LangGraph, a l
 backend, a SQLite checkpointer, provider adapters, an Ink TUI). Claude Code already provides all
 of that plumbing. This repo extracts **the agent itself** — the documentation system prompt, the
 git-evidence collection, the wiki structure, and the idempotence logic — and re-expresses it as a
-single native slash command, `commands/openwiki.md`, packaged as an installable Claude Code plugin.
+single native slash command, `commands/wiki.md`, packaged as an installable Claude Code plugin.
 
 The system prompt and the exact git commands are reproduced **verbatim from OpenWiki's real
 source**, not from memory.
@@ -30,36 +30,43 @@ Inside Claude Code:
 /plugin install openwiki@openwiki-cc
 ```
 
-Then `/openwiki` is available in every project. `/plugin marketplace update openwiki-cc` pulls
-new versions.
+Then `/openwiki:wiki` is available in every project. `/plugin marketplace update openwiki-cc`
+pulls new versions.
+
+> Plugin commands are always namespaced `plugin:command`, so the command is `/openwiki:wiki`
+> (never a bare `/openwiki`). Install manually instead if you want a bare `/wiki`.
 
 ### Manual (no marketplace)
 
-Copy the single command file into the repo you want to document, or globally:
+Copy the single command file into the repo you want to document, or globally. Under
+`.claude/commands/` the name is bare — the file becomes `/wiki`:
 
 ```bash
-# per-project
+# per-project → /wiki
 mkdir -p your-repo/.claude/commands
-cp commands/openwiki.md your-repo/.claude/commands/
+cp commands/wiki.md your-repo/.claude/commands/
 
-# or global
-cp commands/openwiki.md ~/.claude/commands/
+# or global → /wiki everywhere
+cp commands/wiki.md ~/.claude/commands/
 ```
 
 ## Usage
 
 Inside Claude Code, from the root of the target repository:
 
+Installed as a plugin the command is `/openwiki:wiki`; copied under `.claude/commands/` it is
+`/wiki`. Both take the same arguments:
+
 | Command | Behavior |
 |---|---|
-| `/openwiki` | **Auto-route**: if `openwiki/` exists → update, else → init. |
-| `/openwiki init` | Build the wiki from scratch. |
-| `/openwiki update` | Surgically refresh only the pages affected by recent changes. |
-| `/openwiki update <instruction>` | Same, plus an extra instruction (e.g. `document the API routes first`). |
+| `/openwiki:wiki` | **Auto-route**: if `openwiki/` exists → update, else → init. |
+| `/openwiki:wiki init` | Build the wiki from scratch. |
+| `/openwiki:wiki update` | Surgically refresh only the pages affected by recent changes. |
+| `/openwiki:wiki update <instruction>` | Same, plus an extra instruction (e.g. `document the API routes first`). |
 
-> **Note** — bare `/openwiki` auto-routes here, unlike upstream OpenWiki where the bare command
-> is an interactive chat. This is a deliberate divergence: as a slash command, auto-route is more
-> useful. `init` and `update` remain explicit.
+> **Note** — auto-route replaces upstream OpenWiki's interactive-chat default (a slash command
+> can't be a bare `/openwiki` anyway; plugin commands are always namespaced). `init` and `update`
+> remain explicit.
 
 ## How it works
 
@@ -115,7 +122,7 @@ comparable documentation quality.
 To run non-interactively without permission prompts, grant a minimal allowlist in
 `.claude/settings.json` (read-only git + snapshot tooling, writes scoped to `openwiki/`,
 `CLAUDE.md`, `AGENTS.md`). The full snippet is documented inside
-[`commands/openwiki.md`](commands/openwiki.md).
+[`commands/wiki.md`](commands/wiki.md).
 
 ## Fidelity to upstream
 
@@ -138,7 +145,7 @@ fallback, and LangSmith tracing (Claude Code transcripts cover debugging).
   plugin.json        # plugin manifest
   marketplace.json   # single-plugin marketplace (source: ./)
 commands/
-  openwiki.md        # the slash command (system prompt + git + idempotence)
+  wiki.md            # the slash command (system prompt + git + idempotence)
 README.md
 ```
 

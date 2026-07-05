@@ -1,7 +1,7 @@
 {
   "name": "openwiki",
   "description": "Generate and maintain an openwiki/ documentation wiki (init | update) for any repository — a native Claude Code port of langchain-ai/openwiki.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": { "name": "SoulKyu" },
   "homepage": "https://github.com/SoulKyu/openwiki-cc",
   "repository": "https://github.com/SoulKyu/openwiki-cc",
