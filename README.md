@@ -156,8 +156,16 @@ To run non-interactively without permission prompts, grant a minimal allowlist i
 ## Auto-run as a hook (keep the wiki fresh)
 
 Claude Code hooks can invoke the command headlessly so the wiki refreshes itself after you work.
-Wire a **`Stop`** hook (fires when Claude finishes a turn) — or **`SessionEnd`** (once, when the
-session closes) — in `.claude/settings.json`:
+The naive hook spawns a full `claude -p` run every turn — even when nothing changed, it still
+spins up a frontier model just for the in-agent no-op to discover there's no work. The token cost
+is paid *before* the check runs.
+
+Use [`hooks/openwiki-gate.sh`](hooks/openwiki-gate.sh) instead: it reproduces the wiki's Step 0
+no-op check ([`getUpdateNoopStatus`](commands/wiki.md)) in pure shell — a few `git` commands, zero
+tokens — and spawns `claude` **only** when source actually changed since the last run. `Stop` can
+then fire every turn for near-zero cost; the frontier model starts only on a real change.
+
+Copy the script under `.claude/hooks/` and wire it in `.claude/settings.json`:
 
 ```json
 {
@@ -167,7 +175,7 @@ session closes) — in `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$OPENWIKI_HOOK\" ] || OPENWIKI_HOOK=1 claude -p '/openwiki:wiki update' --permission-mode acceptEdits >/dev/null 2>&1 &"
+            "command": "sh .claude/hooks/openwiki-gate.sh"
           }
         ]
       }
@@ -176,14 +184,19 @@ session closes) — in `.claude/settings.json`:
 }
 ```
 
-- **`OPENWIKI_HOOK` guard (required).** The headless `claude -p` run fires its own `Stop` hook;
-  the env-var check makes the child skip re-triggering itself. Without it → infinite recursion.
-- **Backgrounded (`&`).** Don't block your session on the doc run. On `SessionEnd`, wrap with
-  `setsid` so it survives the closing session: `... setsid claude -p '/wiki update' ... &`.
-- Use the bare `/wiki` instead of `/openwiki:wiki` if you installed manually under `.claude/commands/`.
-- The idempotence no-op means an unchanged repo costs a cheap early exit — but each fired hook
-  still spends tokens. **`Stop` runs every turn**; prefer `SessionEnd` (once per session) unless
-  you want continuously-live docs, and mind the FinOps cost of frequent frontier-model runs.
+- **Shell-level gate.** The gate skips the spawn when HEAD is unchanged and the working tree is
+  clean (ignoring `openwiki/.last-update.json`), or when every commit since the recorded `gitHead`
+  touches only `openwiki/`. Same condition as the in-agent no-op, minus the token cost.
+- **`OPENWIKI_HOOK` guard (built in).** The headless run fires its own `Stop` hook; the gate exports
+  `OPENWIKI_HOOK=1` and exits early when it sees it. Without it → infinite recursion.
+- **Backgrounded + `setsid`.** The gate detaches the run so it doesn't block your session and
+  survives a closing session — safe for both `Stop` and `SessionEnd`.
+- Edit the script's `/openwiki:wiki update` to bare `/wiki` if you installed manually under
+  `.claude/commands/`.
+- **`Stop` vs `SessionEnd`.** With the gate, `Stop` (every turn) is cheap and gives continuously-live
+  docs; `SessionEnd` (once per session) still works if you'd rather batch. Either way you only pay
+  the frontier model on a real change.
+- Self-check: `sh hooks/test_gate.sh` (stubs `claude`; exercises every skip/run branch).
 
 ## Fidelity to upstream
 
