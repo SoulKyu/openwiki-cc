@@ -167,7 +167,7 @@ session closes) — in `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "[ -n \"$OPENWIKI_HOOK\" ] || OPENWIKI_HOOK=1 claude -p '/wiki update' --permission-mode acceptEdits >/dev/null 2>&1 &"
+            "command": "[ -n \"$OPENWIKI_HOOK\" ] || OPENWIKI_HOOK=1 claude -p '/openwiki:wiki update' --permission-mode acceptEdits >/dev/null 2>&1 &"
           }
         ]
       }
@@ -180,7 +180,7 @@ session closes) — in `.claude/settings.json`:
   the env-var check makes the child skip re-triggering itself. Without it → infinite recursion.
 - **Backgrounded (`&`).** Don't block your session on the doc run. On `SessionEnd`, wrap with
   `setsid` so it survives the closing session: `... setsid claude -p '/wiki update' ... &`.
-- Use `/openwiki:wiki` instead of `/wiki` if you installed via the plugin marketplace.
+- Use the bare `/wiki` instead of `/openwiki:wiki` if you installed manually under `.claude/commands/`.
 - The idempotence no-op means an unchanged repo costs a cheap early exit — but each fired hook
   still spends tokens. **`Stop` runs every turn**; prefer `SessionEnd` (once per session) unless
   you want continuously-live docs, and mind the FinOps cost of frequent frontier-model runs.
