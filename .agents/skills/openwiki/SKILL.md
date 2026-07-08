@@ -33,6 +33,29 @@ be disciplined about reads. Never read the whole repository into context. Inspec
 config/entrypoint/representative files, and use targeted `grep`/`rg` + short reads. Document
 incrementally so compaction preserves your progress.
 
+## Step 0 — Pre-run no-op check (update mode with no additional instruction only)
+
+Mirrors OpenWiki 0.0.2 `getUpdateNoopStatus` / `shouldCheckUpdateNoop`: skip the entire run
+(no reads, no writes) when nothing relevant changed. Applies **only** in update mode **and only
+when the user gave no additional instruction**. If an instruction was given, skip this step and
+proceed to Step 1.
+
+Read `openwiki/.last-update.json`. If it has no `gitHead`, skip this check → go to Step 1.
+Otherwise run:
+
+```bash
+git --no-pager rev-parse HEAD
+git --no-pager status --short --untracked-files=all
+git --no-pager diff --name-only <gitHead>..HEAD   # only if HEAD != gitHead
+```
+
+Skip the whole run when **all** hold:
+- `status --short` is empty after removing any line whose path is `openwiki/.last-update.json`;
+- HEAD == `gitHead`, **or** every path in `<gitHead>..HEAD` is under `openwiki/`.
+
+If skipped: report "wiki already current — no repository changes since `<gitHead>`" and stop
+without touching any files. Otherwise continue to Step 1.
+
 ## Step 1 — Collect git evidence (run BEFORE any write)
 
 First read `openwiki/.last-update.json` if it exists to recover `gitHead` and `updatedAt`.
