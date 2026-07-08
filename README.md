@@ -153,6 +153,38 @@ To run non-interactively without permission prompts, grant a minimal allowlist i
 `CLAUDE.md`, `AGENTS.md`). The full snippet is documented inside
 [`commands/wiki.md`](commands/wiki.md).
 
+## Auto-run as a hook (keep the wiki fresh)
+
+Claude Code hooks can invoke the command headlessly so the wiki refreshes itself after you work.
+Wire a **`Stop`** hook (fires when Claude finishes a turn) — or **`SessionEnd`** (once, when the
+session closes) — in `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$OPENWIKI_HOOK\" ] || OPENWIKI_HOOK=1 claude -p '/wiki update' --permission-mode acceptEdits >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+- **`OPENWIKI_HOOK` guard (required).** The headless `claude -p` run fires its own `Stop` hook;
+  the env-var check makes the child skip re-triggering itself. Without it → infinite recursion.
+- **Backgrounded (`&`).** Don't block your session on the doc run. On `SessionEnd`, wrap with
+  `setsid` so it survives the closing session: `... setsid claude -p '/wiki update' ... &`.
+- Use `/openwiki:wiki` instead of `/wiki` if you installed via the plugin marketplace.
+- The idempotence no-op means an unchanged repo costs a cheap early exit — but each fired hook
+  still spends tokens. **`Stop` runs every turn**; prefer `SessionEnd` (once per session) unless
+  you want continuously-live docs, and mind the FinOps cost of frequent frontier-model runs.
+
 ## Fidelity to upstream
 
 **Taken verbatim:** the full system prompt (`src/agent/prompt.ts`), the `## OpenWiki` section,
