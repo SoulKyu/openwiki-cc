@@ -200,6 +200,12 @@ Copy the script under `.claude/hooks/` and wire it in `.claude/settings.json`:
 
 ## Fidelity to upstream
 
+**Tracked against upstream `0.0.4`.** The reproduced surface — the system prompt
+(`src/agent/prompt.ts`), the git commands and no-op/snapshot/metadata logic (`src/agent/utils.ts`)
+— is byte-identical from `0.0.2` through `0.0.4`; every `0.0.2 → 0.0.4` change is harness plumbing
+this port deliberately omits (OpenRouter model fallback removed, `streamEvents` v3, non-TTY
+credential/startup flow).
+
 **Taken verbatim:** the full system prompt (`src/agent/prompt.ts`), the `## OpenWiki` section,
 the git commands (`src/agent/utils.ts`), the `.last-update.json` shape, and the snapshot / no-op
 logic (`src/agent/index.ts`).

@@ -32,7 +32,7 @@ minimum) for comparable documentation quality. Do not run it on a small/fast mod
 
 ## Step 0 — Pre-run no-op check (update mode with no additional instruction only)
 
-Mirrors OpenWiki 0.0.2 `getUpdateNoopStatus` / `shouldCheckUpdateNoop`: skip the entire run
+Mirrors OpenWiki 0.0.4 `getUpdateNoopStatus` / `shouldCheckUpdateNoop`: skip the entire run
 (no subagents, no reads, no writes) when nothing relevant changed. Applies **only** in update
 mode **and only when `$ARGUMENTS` carried no additional instruction**. If an instruction was
 given, skip this step and proceed to Step 1.
